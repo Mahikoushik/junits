@@ -5,11 +5,10 @@ import com.adobe.granite.workflow.exec.WorkItem;
 import com.adobe.granite.workflow.metadata.MetaDataMap;
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
+import org.apache.sling.api.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
-import javax.jcr.Node;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -31,40 +30,39 @@ class EPSDensityDeciderTest {
     }
 
     @Test
-void testExecute_Density1000() throws Exception {
-    // Retrieve the existing resource
-    Resource testResource = context.resourceResolver().getResource(TEST_ASSET_PATH);
-    assert testResource != null; // Ensure resource exists
-    MetaDataMap metaDataMap = new MockMetaDataMap(); // Use a mock MetaDataMap
+    void testExecute_Density1000() throws Exception {
+        // Simulate a WorkItem and WorkflowSession
+        WorkItem workItem = context.create().resource("/var/workflow/item").adaptTo(WorkItem.class);
+        WorkflowSession workflowSession = context.create().resource("/var/workflow/session").adaptTo(WorkflowSession.class);
 
-    // Set up mock workflow item and session
-    WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Adapt from the resolver
-    WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class);
+        // Create MetaDataMap
+        MetaDataMap metaDataMap = context.create().resource("/var/workflow/metaDataMap").adaptTo(MetaDataMap.class);
 
-    // Execute workflow
-    epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
+        // Execute the workflow process
+        epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
-    // Validate metadata map updates
-    assertEquals(EPSDensityDecider.DENSITY_1000, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
-}
-
+        // Validate the density decision
+        assertEquals(EPSDensityDecider.DENSITY_1000, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
+    }
 
     @Test
     void testExecute_Density300() throws Exception {
-        // Update content type for a different test case
-        Node metadataNode = context.resourceResolver().getResource(TEST_METADATA_PATH).adaptTo(Node.class);
-        metadataNode.setProperty("xmp:eaton-content-type", "eaton:resources/marketing-resources/illustrations");
-        context.resourceResolver().commit();
+        // Update content type to simulate a different asset type
+        Resource metadataResource = context.resourceResolver().getResource(TEST_METADATA_PATH);
+        assert metadataResource != null;
+        metadataResource.adaptTo(javax.jcr.Node.class).setProperty("xmp:eaton-content-type", "eaton:resources/marketing-resources/illustrations");
 
-        // Set up mock workflow item and session
-        WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Correct use of adaptTo
-        WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class); // Correct use of adaptTo
-        MetaDataMap metaDataMap = context.create().resource(TEST_ASSET_PATH).adaptTo(MetaDataMap.class);
+        // Simulate a WorkItem and WorkflowSession
+        WorkItem workItem = context.create().resource("/var/workflow/item").adaptTo(WorkItem.class);
+        WorkflowSession workflowSession = context.create().resource("/var/workflow/session").adaptTo(WorkflowSession.class);
 
-        // Execute workflow
+        // Create MetaDataMap
+        MetaDataMap metaDataMap = context.create().resource("/var/workflow/metaDataMap").adaptTo(MetaDataMap.class);
+
+        // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
-        // Validate metadata map updates
+        // Validate the density decision
         assertEquals(EPSDensityDecider.DENSITY_300, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
     }
 }
