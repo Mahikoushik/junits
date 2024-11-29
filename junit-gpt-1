@@ -6,11 +6,17 @@ import com.adobe.granite.workflow.metadata.MetaDataMap;
 import io.wcm.testing.mock.aem.junit5.AemContext;
 import io.wcm.testing.mock.aem.junit5.AemContextExtension;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+
+import javax.jcr.Node;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(AemContextExtension.class)
 class EPSDensityDeciderTest {
@@ -21,48 +27,54 @@ class EPSDensityDeciderTest {
     private static final String TEST_ASSET_PATH = "/content/dam/test-asset";
     private static final String TEST_METADATA_PATH = TEST_ASSET_PATH + "/jcr:content/metadata";
 
+    private WorkItem workItem;
+    private WorkflowSession workflowSession;
+    private MetaDataMap metaDataMap;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         epsDensityDecider = new EPSDensityDecider();
 
         // Create asset and metadata structure
-        context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+        Resource metadataResource = context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+
+        // Mock WorkflowSession
+        workflowSession = mock(WorkflowSession.class);
+
+        // Mock WorkItem
+        workItem = mock(WorkItem.class);
+        ResourceResolver resolver = context.resourceResolver();
+        Node assetNode = metadataResource.adaptTo(Node.class);
+        when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
+        when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
+
+        // Mock MetaDataMap
+        metaDataMap = mock(MetaDataMap.class);
+        when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
     }
 
     @Test
     void testExecute_Density1000() throws Exception {
-        // Simulate a WorkItem and WorkflowSession
-        WorkItem workItem = context.create().resource("/var/workflow/item").adaptTo(WorkItem.class);
-        WorkflowSession workflowSession = context.create().resource("/var/workflow/session").adaptTo(WorkflowSession.class);
-
-        // Create MetaDataMap
-        MetaDataMap metaDataMap = context.create().resource("/var/workflow/metaDataMap").adaptTo(MetaDataMap.class);
-
         // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
         // Validate the density decision
-        assertEquals(EPSDensityDecider.DENSITY_1000, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
+        Mockito.verify(metaDataMap).put(EPSDensityDecider.DENSITY_DECISION, EPSDensityDecider.DENSITY_1000);
     }
 
     @Test
     void testExecute_Density300() throws Exception {
-        // Update content type to simulate a different asset type
+        // Update content type for a different test case
         Resource metadataResource = context.resourceResolver().getResource(TEST_METADATA_PATH);
         assert metadataResource != null;
-        metadataResource.adaptTo(javax.jcr.Node.class).setProperty("xmp:eaton-content-type", "eaton:resources/marketing-resources/illustrations");
-
-        // Simulate a WorkItem and WorkflowSession
-        WorkItem workItem = context.create().resource("/var/workflow/item").adaptTo(WorkItem.class);
-        WorkflowSession workflowSession = context.create().resource("/var/workflow/session").adaptTo(WorkflowSession.class);
-
-        // Create MetaDataMap
-        MetaDataMap metaDataMap = context.create().resource("/var/workflow/metaDataMap").adaptTo(MetaDataMap.class);
+        Node metadataNode = metadataResource.adaptTo(Node.class);
+        metadataNode.setProperty("xmp:eaton-content-type", "eaton:resources/marketing-resources/illustrations");
+        context.resourceResolver().commit();
 
         // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
         // Validate the density decision
-        assertEquals(EPSDensityDecider.DENSITY_300, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
+        Mockito.verify(metaDataMap).put(EPSDensityDecider.DENSITY_DECISION, EPSDensityDecider.DENSITY_300);
     }
 }
