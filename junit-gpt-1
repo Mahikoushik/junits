@@ -13,8 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,7 @@ class EPSDensityDeciderTest {
     private WorkItem workItem;
     private WorkflowSession workflowSession;
     private MetaDataMap metaDataMap;
+    private Session session;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -38,13 +41,16 @@ class EPSDensityDeciderTest {
         // Create asset and metadata structure
         Resource metadataResource = context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
 
+        // Mock JCR Session
+        session = mock(Session.class);
+        when(session.getRootNode()).thenReturn(metadataResource.adaptTo(Node.class));
+
         // Mock WorkflowSession
         workflowSession = mock(WorkflowSession.class);
+        when(workflowSession.adaptTo(Session.class)).thenReturn(session);
 
         // Mock WorkItem
         workItem = mock(WorkItem.class);
-        ResourceResolver resolver = context.resourceResolver();
-        Node assetNode = metadataResource.adaptTo(Node.class);
         when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
         when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
 
@@ -55,10 +61,13 @@ class EPSDensityDeciderTest {
 
     @Test
     void testExecute_Density1000() throws Exception {
+        // Validate that the mocked session is not null
+        assertNotNull(workflowSession.adaptTo(Session.class), "Session should not be null after adapting WorkflowSession");
+
         // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
-        // Validate the density decision
+        // Verify the density decision
         Mockito.verify(metaDataMap).put(EPSDensityDecider.DENSITY_DECISION, EPSDensityDecider.DENSITY_1000);
     }
 
@@ -74,7 +83,7 @@ class EPSDensityDeciderTest {
         // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
 
-        // Validate the density decision
+        // Verify the density decision
         Mockito.verify(metaDataMap).put(EPSDensityDecider.DENSITY_DECISION, EPSDensityDecider.DENSITY_300);
     }
 }
