@@ -31,18 +31,23 @@ class EPSDensityDeciderTest {
     }
 
     @Test
-    void testExecute_Density1000() throws Exception {
-        // Set up mock workflow item and session
-        WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Use adaptTo correctly
-        WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class); // Use adaptTo on resource resolver
-        MetaDataMap metaDataMap = context.create().resource(TEST_ASSET_PATH).adaptTo(MetaDataMap.class);
+void testExecute_Density1000() throws Exception {
+    // Retrieve the existing resource
+    Resource testResource = context.resourceResolver().getResource(TEST_ASSET_PATH);
+    assert testResource != null; // Ensure resource exists
+    MetaDataMap metaDataMap = new MockMetaDataMap(); // Use a mock MetaDataMap
 
-        // Execute workflow
-        epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
+    // Set up mock workflow item and session
+    WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Adapt from the resolver
+    WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class);
 
-        // Validate metadata map updates
-        assertEquals(EPSDensityDecider.DENSITY_1000, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
-    }
+    // Execute workflow
+    epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
+
+    // Validate metadata map updates
+    assertEquals(EPSDensityDecider.DENSITY_1000, metaDataMap.get(EPSDensityDecider.DENSITY_DECISION));
+}
+
 
     @Test
     void testExecute_Density300() throws Exception {
