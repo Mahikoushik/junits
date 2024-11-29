@@ -34,37 +34,42 @@ class EPSDensityDeciderTest {
     private Session session;
     private Node rootNode;
 
-    @BeforeEach
-void setUp() throws Exception {
-    epsDensityDecider = new EPSDensityDecider();
-
-    // Mock JCR Session and Root Node
-    session = mock(Session.class);
-    rootNode = mock(Node.class);
-    when(session.getRootNode()).thenReturn(rootNode);
-
-    // Mock WorkflowSession
-    workflowSession = mock(WorkflowSession.class);
-    when(workflowSession.adaptTo(Session.class)).thenReturn(session);
-
-    // Mock WorkItem
-    workItem = mock(WorkItem.class);
-    when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
-    when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
-
-    // Mock the Node Hierarchy
-    Node testAssetNode = context.resourceResolver().getResource(TEST_ASSET_PATH).adaptTo(Node.class);
-    assert testAssetNode != null; // Ensure the test resource exists
-    when(rootNode.getNode("content/dam/test-asset")).thenReturn(testAssetNode);
-
-    // Mock MetaDataMap
-    metaDataMap = mock(MetaDataMap.class);
-    when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
-
-    // Set up test resource in AEM context
-    context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
-}
-
+   @BeforeEach
+    void setUp() throws Exception {
+        epsDensityDecider = new EPSDensityDecider();
+    
+        // Mock JCR Session and Root Node
+        session = mock(Session.class);
+        rootNode = mock(Node.class);
+        when(session.getRootNode()).thenReturn(rootNode);
+    
+        // Mock WorkflowSession
+        workflowSession = mock(WorkflowSession.class);
+        when(workflowSession.adaptTo(Session.class)).thenReturn(session);
+    
+        // Mock WorkItem
+        workItem = mock(WorkItem.class);
+        when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
+        when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
+    
+        // Mock the Asset Node
+        Node testAssetNode = mock(Node.class);
+        when(testAssetNode.getPrimaryNodeType().isNodeType(DamConstants.NT_DAM_ASSET)).thenReturn(true);
+        when(testAssetNode.getDepth()).thenReturn(1); // Simulate a valid depth
+        when(testAssetNode.getPath()).thenReturn(TEST_ASSET_PATH);
+    
+        // Mock the Payload Node
+        Node payloadNode = mock(Node.class);
+        when(payloadNode.getPrimaryNodeType().isNodeType(DamConstants.NT_DAM_ASSET)).thenReturn(false);
+        when(payloadNode.getParent()).thenReturn(testAssetNode); // Link to the asset node
+        when(payloadNode.getPath()).thenReturn(TEST_ASSET_PATH);
+    
+        when(rootNode.getNode("content/dam/test-asset")).thenReturn(payloadNode);
+    
+        // Mock MetaDataMap
+        metaDataMap = mock(MetaDataMap.class);
+        when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
+    }
 
     @Test
     void testExecute_Density1000() throws Exception {
