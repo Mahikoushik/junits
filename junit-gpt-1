@@ -58,20 +58,27 @@ void setUp() throws Exception {
     NodeType assetNodeType = mock(NodeType.class);
     when(assetNodeType.isNodeType(DamConstants.NT_DAM_ASSET)).thenReturn(true);
 
+    // Mock Property for CONTENT_TYPE_PROP
+    Property contentTypeProperty = mock(Property.class);
+    when(contentTypeProperty.isMultiple()).thenReturn(false);
+    when(contentTypeProperty.getString()).thenReturn("eaton:resources/technical-resources/drawings");
+
     // Mock Asset Node
     Node testAssetNode = mock(Node.class);
     when(testAssetNode.getPrimaryNodeType()).thenReturn(assetNodeType); // Return the mocked NodeType
     when(testAssetNode.getDepth()).thenReturn(1); // Simulate a valid depth
-    when(testAssetNode.getPath()).thenReturn(TEST_ASSET_PATH);
+    when(testAssetNode.getPath()).thenReturn("/content/dam/asset");
+    when(testAssetNode.hasProperty(CONTENT_TYPE_PROP)).thenReturn(true); // Simulate property existence
+    when(testAssetNode.getProperty(CONTENT_TYPE_PROP)).thenReturn(contentTypeProperty);
 
-    // Mock NodeType for Payload Node
+    // Mock Payload Node
     NodeType payloadNodeType = mock(NodeType.class);
     when(payloadNodeType.isNodeType(DamConstants.NT_DAM_ASSET)).thenReturn(false);
 
-    // Mock Payload Node
     Node payloadNode = mock(Node.class);
     when(payloadNode.getPrimaryNodeType()).thenReturn(payloadNodeType); // Return the mocked NodeType
     when(payloadNode.getParent()).thenReturn(testAssetNode); // Link to the asset node
+    when(payloadNode.getDepth()).thenReturn(2); // Ensure depth > 1
     when(payloadNode.getPath()).thenReturn(TEST_ASSET_PATH);
 
     // Link the Payload Node to Root Node
@@ -81,6 +88,7 @@ void setUp() throws Exception {
     metaDataMap = mock(MetaDataMap.class);
     when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
 }
+
 
 
     @Test
