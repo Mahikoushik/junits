@@ -35,34 +35,36 @@ class EPSDensityDeciderTest {
     private Node rootNode;
 
     @BeforeEach
-    void setUp() throws Exception {
-        epsDensityDecider = new EPSDensityDecider();
+void setUp() throws Exception {
+    epsDensityDecider = new EPSDensityDecider();
 
-        // Mock JCR Session
-        session = mock(Session.class);
-        rootNode = mock(Node.class); // Mock the root node
-        when(session.getRootNode()).thenReturn(rootNode);
+    // Mock JCR Session and Root Node
+    session = mock(Session.class);
+    rootNode = mock(Node.class);
+    when(session.getRootNode()).thenReturn(rootNode);
 
-        // Mock WorkflowSession
-        workflowSession = mock(WorkflowSession.class);
-        when(workflowSession.adaptTo(Session.class)).thenReturn(session);
+    // Mock WorkflowSession
+    workflowSession = mock(WorkflowSession.class);
+    when(workflowSession.adaptTo(Session.class)).thenReturn(session);
 
-        // Mock WorkItem
-        workItem = mock(WorkItem.class);
-        when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
-        when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
+    // Mock WorkItem
+    workItem = mock(WorkItem.class);
+    when(workItem.getWorkflowData()).thenReturn(mock(com.adobe.granite.workflow.exec.WorkflowData.class));
+    when(workItem.getWorkflowData().getPayload()).thenReturn(TEST_ASSET_PATH);
 
-        // Mock MetaDataMap
-        metaDataMap = mock(MetaDataMap.class);
-        when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
+    // Mock the Node Hierarchy
+    Node testAssetNode = context.resourceResolver().getResource(TEST_ASSET_PATH).adaptTo(Node.class);
+    assert testAssetNode != null; // Ensure the test resource exists
+    when(rootNode.getNode("content/dam/test-asset")).thenReturn(testAssetNode);
 
-        // Set up test resource in AEM context
-        context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+    // Mock MetaDataMap
+    metaDataMap = mock(MetaDataMap.class);
+    when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
 
-        // Mock root node behavior to include the test resource
-        Node testAssetNode = context.resourceResolver().getResource(TEST_ASSET_PATH).adaptTo(Node.class);
-        when(rootNode.getNode(TEST_ASSET_PATH.substring(1))).thenReturn(testAssetNode);
-    }
+    // Set up test resource in AEM context
+    context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+}
+
 
     @Test
     void testExecute_Density1000() throws Exception {
