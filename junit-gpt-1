@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import javax.jcr.Node;
-import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,17 +32,16 @@ class EPSDensityDeciderTest {
     private WorkflowSession workflowSession;
     private MetaDataMap metaDataMap;
     private Session session;
+    private Node rootNode;
 
     @BeforeEach
     void setUp() throws Exception {
         epsDensityDecider = new EPSDensityDecider();
 
-        // Create asset and metadata structure
-        Resource metadataResource = context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
-
         // Mock JCR Session
         session = mock(Session.class);
-        when(session.getRootNode()).thenReturn(metadataResource.adaptTo(Node.class));
+        rootNode = mock(Node.class); // Mock the root node
+        when(session.getRootNode()).thenReturn(rootNode);
 
         // Mock WorkflowSession
         workflowSession = mock(WorkflowSession.class);
@@ -57,12 +55,20 @@ class EPSDensityDeciderTest {
         // Mock MetaDataMap
         metaDataMap = mock(MetaDataMap.class);
         when(workItem.getWorkflowData().getMetaDataMap()).thenReturn(metaDataMap);
+
+        // Set up test resource in AEM context
+        context.create().resource(TEST_METADATA_PATH, "xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+
+        // Mock root node behavior to include the test resource
+        Node testAssetNode = context.resourceResolver().getResource(TEST_ASSET_PATH).adaptTo(Node.class);
+        when(rootNode.getNode(TEST_ASSET_PATH.substring(1))).thenReturn(testAssetNode);
     }
 
     @Test
     void testExecute_Density1000() throws Exception {
-        // Validate that the mocked session is not null
+        // Validate that the mocked session and rootNode are not null
         assertNotNull(workflowSession.adaptTo(Session.class), "Session should not be null after adapting WorkflowSession");
+        assertNotNull(session.getRootNode(), "RootNode should not be null after calling session.getRootNode()");
 
         // Execute the workflow process
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
