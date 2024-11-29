@@ -93,3 +93,6 @@ class EPSDensityDeciderTest {
         Mockito.verify(metaDataMap).put(EPSDensityDecider.DENSITY_DECISION, EPSDensityDecider.DENSITY_300);
     }
 }
+public static Node getPayloadNode(Node rootNode, WorkItem workItem) throws RepositoryException {
+        return rootNode.getNode(((String) workItem.getWorkflowData().getPayload()).substring(1));
+    }
