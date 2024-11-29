@@ -1,0 +1,110 @@
+package com.eaton.platform.core.workflows;
+
+import com.adobe.granite.workflow.WorkflowSession;
+import com.adobe.granite.workflow.exec.WorkItem;
+import com.adobe.granite.workflow.metadata.MetaDataMap;
+import io.wcm.testing.mock.aem.junit5.AemContext;
+import io.wcm.testing.mock.aem.junit5.AemContextExtension;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(AemContextExtension.class)
+class EPSDensityDeciderTest {
+
+    private final AemContext context = new AemContext();
+    private EPSDensityDecider epsDensityDecider;
+
+    private static final String TEST_ASSET_PATH = "/content/dam/test-asset";
+    private static final String TEST_METADATA_PATH = TEST_ASSET_PATH + "/jcr:content/metadata";
+
+    @BeforeEach
+    void setUp() throws RepositoryException {
+        epsDensityDecider = new EPSDensityDecider();
+
+        // Create asset node structure
+        Node assetNode = context.create().resource(TEST_ASSET_PATH).adaptTo(Node.class);
+        Node metadataNode = assetNode.addNode("jcr:content", "nt:unstructured").addNode("metadata", "nt:unstructured");
+
+        // Add content type property to the metadata node
+        metadataNode.setProperty("xmp:eaton-content-type", "eaton:resources/technical-resources/drawings");
+
+        // Save changes
+        context.resourceResolver().commit();
+    }
+
+    @Test
+    void testExecute_Density1000() throws Exception {
+        // Set up work item and workflow session
+        WorkItem workItem = context.mock(WorkItem.class);
+        WorkflowSession workflowSession = context.mock(WorkflowSession.class);
+        MetaDataMap metaDataMap = context.mock(MetaDataMap.class);
+
+        ResourceResolver resolver = context.resourceResolver();
+        Node rootNode = resolver.adaptTo(Node.class);
+        Node payloadNode = rootNode.getNode(TEST_ASSET_PATH);
+
+        // Mock workflow utility methods
+        context.registerService(WorkflowUtils.class, new WorkflowUtils() {
+            @Override
+            public Node getPayloadNode(Node root, WorkItem workItem) throws RepositoryException {
+                return payloadNode;
+            }
+
+            @Override
+            public Node getAssetNode(Node payloadNode, org.slf4j.Logger log) throws RepositoryException {
+                return payloadNode;
+            }
+        });
+
+        // Execute workflow
+        epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
+
+        // Validate result
+        String densityDecision = (String) metaDataMap.get(EPSDensityDecider.DENSITY_DECISION);
+        assertEquals(EPSDensityDecider.DENSITY_1000, densityDecision);
+    }
+
+    @Test
+    void testExecute_Density300() throws Exception {
+        // Update metadata to use a different content type
+        Node metadataNode = context.resourceResolver().getResource(TEST_METADATA_PATH).adaptTo(Node.class);
+        metadataNode.setProperty("xmp:eaton-content-type", "eaton:resources/marketing-resources/illustrations");
+        context.resourceResolver().commit();
+
+        // Set up work item and workflow session
+        WorkItem workItem = context.mock(WorkItem.class);
+        WorkflowSession workflowSession = context.mock(WorkflowSession.class);
+        MetaDataMap metaDataMap = context.mock(MetaDataMap.class);
+
+        ResourceResolver resolver = context.resourceResolver();
+        Node rootNode = resolver.adaptTo(Node.class);
+        Node payloadNode = rootNode.getNode(TEST_ASSET_PATH);
+
+        // Mock workflow utility methods
+        context.registerService(WorkflowUtils.class, new WorkflowUtils() {
+            @Override
+            public Node getPayloadNode(Node root, WorkItem workItem) throws RepositoryException {
+                return payloadNode;
+            }
+
+            @Override
+            public Node getAssetNode(Node payloadNode, org.slf4j.Logger log) throws RepositoryException {
+                return payloadNode;
+            }
+        });
+
+        // Execute workflow
+        epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
+
+        // Validate result
+        String densityDecision = (String) metaDataMap.get(EPSDensityDecider.DENSITY_DECISION);
+        assertEquals(EPSDensityDecider.DENSITY_300, densityDecision);
+    }
+}
