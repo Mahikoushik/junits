@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.jcr.Node;
-import javax.jcr.RepositoryException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -24,7 +23,7 @@ class EPSDensityDeciderTest {
     private static final String TEST_METADATA_PATH = TEST_ASSET_PATH + "/jcr:content/metadata";
 
     @BeforeEach
-    void setUp() throws RepositoryException {
+    void setUp() {
         epsDensityDecider = new EPSDensityDecider();
 
         // Create asset and metadata structure
@@ -34,12 +33,9 @@ class EPSDensityDeciderTest {
     @Test
     void testExecute_Density1000() throws Exception {
         // Set up mock workflow item and session
-        WorkItem workItem = context.create().adaptTo(WorkItem.class);
-        WorkflowSession workflowSession = context.create().adaptTo(WorkflowSession.class);
-
-        // Create mock payload path
-        context.currentResource(TEST_ASSET_PATH);
-        MetaDataMap metaDataMap = context.create().adaptTo(MetaDataMap.class);
+        WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Use adaptTo correctly
+        WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class); // Use adaptTo on resource resolver
+        MetaDataMap metaDataMap = context.create().resource(TEST_ASSET_PATH).adaptTo(MetaDataMap.class);
 
         // Execute workflow
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
@@ -56,12 +52,9 @@ class EPSDensityDeciderTest {
         context.resourceResolver().commit();
 
         // Set up mock workflow item and session
-        WorkItem workItem = context.create().adaptTo(WorkItem.class);
-        WorkflowSession workflowSession = context.create().adaptTo(WorkflowSession.class);
-
-        // Create mock payload path
-        context.currentResource(TEST_ASSET_PATH);
-        MetaDataMap metaDataMap = context.create().adaptTo(MetaDataMap.class);
+        WorkItem workItem = context.resourceResolver().adaptTo(WorkItem.class); // Correct use of adaptTo
+        WorkflowSession workflowSession = context.resourceResolver().adaptTo(WorkflowSession.class); // Correct use of adaptTo
+        MetaDataMap metaDataMap = context.create().resource(TEST_ASSET_PATH).adaptTo(MetaDataMap.class);
 
         // Execute workflow
         epsDensityDecider.execute(workItem, workflowSession, metaDataMap);
